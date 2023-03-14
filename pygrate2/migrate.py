@@ -1,7 +1,9 @@
-from .settings import find_migrations, load_state_object
+import importlib.util
+import os
 import sys
 from typing import List
-import importlib.util
+
+from .settings import find_migrations, load_state_object
 
 
 def load_migrations() -> List[callable]:
@@ -39,6 +41,10 @@ def load_migrations() -> List[callable]:
 
 
 def apply():
+    if os.getenv("PYGRATE_AUTOMIGRATE", "true").lower() != "true":
+        print("Migrations will not be applied as PYGRATE_AUTOMIGRATE is not true")
+        return
+
     pygrate_config = load_state_object()
     last_migration = pygrate_config.get_migration_version()
 
@@ -54,8 +60,5 @@ def apply():
             )
             migration_instance.apply()
             pygrate_config.set_migration_version(migration_instance.version)
-            assert (
-                pygrate_config.get_migration_version()
-                == migration_instance.version
-            )
+            assert pygrate_config.get_migration_version() == migration_instance.version
             print("[Done]")
